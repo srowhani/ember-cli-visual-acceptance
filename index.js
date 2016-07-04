@@ -28,12 +28,12 @@ function runCommand (command, args, ignoreStdError) {
   })
 }
 
-function base64Encode (file) {
-  // read binary data
-  var bitmap = fs.readFileSync(file)
-  // convert binary data to base64 encoded string
-  return new Buffer(bitmap).toString('base64')
-}
+// function base64Encode (file) {
+//   // read binary data
+//   var bitmap = fs.readFileSync(file)
+//   // convert binary data to base64 encoded string
+//   return new Buffer(bitmap).toString('base64')
+// }
 
 function compareVersions (installed, required) {
   if (required === undefined) {
@@ -160,7 +160,7 @@ function buildReport (params) {
       fs.renameSync(reportPath, 'companionRepo/' + newReportPath)
       process.chdir('companionRepo')
       return runCommand('git', ['add', '-A']).then(function () {
-        return runCommand('git', ['commit', '-am', '"Add new report"']).then(function (){
+        return runCommand('git', ['commit', '-am', '"Add new report"']).then(function () {
           return runCommand('git', ['push', repoURL])
         })
       })
