@@ -149,7 +149,7 @@ function buildReport (params) {
     console.log('uploadToCompanionRepo')
     var repoURL = process.env.COMPANION_REPO
     console.log('cloning: ' + repoURL)
-    return runCommand('git', ['clone', '-b', 'gh-pages', repoURL, 'companionRepo']).then(function (params) {
+    return runCommand('git', ['clone', repoURL, 'companionRepo']).then(function (params) {
       fs.exists(filename, function (exists) {
         if (exists) {
           console.log('File exists. Deleting now ...')
