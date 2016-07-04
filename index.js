@@ -28,13 +28,6 @@ function runCommand (command, args, ignoreStdError) {
   })
 }
 
-function base64Encode (file) {
-  // read binary data
-  var bitmap = fs.readFileSync(file)
-  // convert binary data to base64 encoded string
-  return new Buffer(bitmap).toString('base64')
-}
-
 function compareVersions (installed, required) {
   if (required === undefined) {
     return true
@@ -146,7 +139,9 @@ function buildReport (params) {
   var reportPath = 'visual-acceptance-report/report.html'
   var newReportPath = process.env.TRAVIS_REPO_SLUG + '/' + process.env.TRAVIS_PULL_REQUEST + '.html'
   function uploadToCompanionRepo (reportPath, filename) {
+    console.log('uploadToCompanionRepo')
     var repoURL = process.env.COMPANION_REPO
+    console.log('cloning: ' + repoURL)
     return runCommand('git', ['clone', '-b', 'gh-pages', repoURL, 'companionRepo']).then(function (params) {
       fs.exists(filename, function (exists) {
         if (exists) {
@@ -161,7 +156,10 @@ function buildReport (params) {
       process.chdir('companionRepo')
       return runCommand('git', ['add', '-A']).then(function () {
         return runCommand('git', ['commit', '-am', '"Add new report"']).then(function () {
-          return runCommand('git', ['push', repoURL])
+          return runCommand('git', ['push', repoURL]).then(function () {
+            console.log('Pushing to ' + repoURL)
+            return ['https://ember-cli-visual-acceptance.github.io/' + newReportPath]
+          })
         })
       })
     })
@@ -174,7 +172,7 @@ function buildReport (params) {
       'Authorization': 'token ' + process.env.VISUAL_ACCEPTANCE_TOKEN
     },
     'json': {
-      'body': '![PR ember-cli-visual-acceptance Report](' + imgurResponse[0] + ') \n [Imgur Album](' + imgurResponse[1] + ')'
+      'body': '![PR ember-cli-visual-acceptance Report](' + imgurResponse[0] + ')'
     }
   }
 
