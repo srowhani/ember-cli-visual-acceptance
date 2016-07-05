@@ -191,7 +191,7 @@ function buildReport (params) {
       }
     }
     var url = 'https://api.github.com/repos/' + process.env.TRAVIS_REPO_SLUG + '/issues/' + process.env.TRAVIS_PULL_REQUEST + '/comments'
-    request('GET', url, githubApiGetOptions)
+    response = request('GET', url, githubApiGetOptions)
     var bodyJSON = JSON.parse(response.getBody().toString())
     for (var i = 0; i < bodyJSON.length; i++) {
       if (bodyJSON[i].body.indexOf('[PR ember-cli-visual-acceptance Report]') > -1) {
