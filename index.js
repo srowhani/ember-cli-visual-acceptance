@@ -169,6 +169,8 @@ function buildReport (params) {
           })
         })
       })
+    }).catch(function (e){
+      console.log(e)
     })
   }
 
