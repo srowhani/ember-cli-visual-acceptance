@@ -4,7 +4,6 @@ var bodyParser = require('body-parser')
 var fs = require('fs')
 var path = require('path')
 var spawn = require('child_process').spawn
-var exec = require('child_process').exec
 var RSVP = require('rsvp')
 var request = require('sync-request')
 
@@ -192,7 +191,7 @@ function buildReport (params) {
       }
     }
     var url = 'https://api.github.com/repos/' + process.env.TRAVIS_REPO_SLUG + '/issues/' + process.env.TRAVIS_PULL_REQUEST + '/comments'
-    var response = request('GET', url, githubApiGetOptions)
+    request('GET', url, githubApiGetOptions)
     var bodyJSON = JSON.parse(response.getBody().toString())
     for (var i = 0; i < bodyJSON.length; i++) {
       if (bodyJSON[i].body.indexOf('[PR ember-cli-visual-acceptance Report]') > -1) {
