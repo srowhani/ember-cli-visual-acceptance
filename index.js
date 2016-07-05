@@ -4,6 +4,7 @@ var bodyParser = require('body-parser')
 var fs = require('fs')
 var path = require('path')
 var spawn = require('child_process').spawn
+var exec = require('child_process').exec
 var RSVP = require('rsvp')
 var request = require('sync-request')
 
@@ -15,7 +16,7 @@ function runCommand (command, args, ignoreStdError) {
     })
     child.stderr.on('data', function (data) {
       if (ignoreStdError || data.toString().indexOf('fs: re-evaluating native module sources is not supported.') > -1) {
-        // Use ignoreStdError only to get around this issue https://github.com/ciena-blueplanet/ember-cli-visual-acceptance/issues/25
+         // Use ignoreStdError only to get around this issue https://github.com/ciena-blueplanet/ember-cli-visual-acceptance/issues/25
         console.log(data.toString())
       } else {
         reject(data.toString())
@@ -149,7 +150,8 @@ function buildReport (params) {
     console.log('uploadToCompanionRepo')
     var repoURL = process.env.COMPANION_REPO
     console.log('cloning: ' + repoURL)
-    return runCommand('git', ['clone', repoURL, 'companionRepo']).then(function (params) {
+    return runCommand('git', ['clone', repoURL, 'companionRepo'], true).then(function (params) {
+      console.log('cloned')
       fs.exists(filename, function (exists) {
         if (exists) {
           console.log('File exists. Deleting now ...')
@@ -163,45 +165,44 @@ function buildReport (params) {
       process.chdir('companionRepo')
       return runCommand('git', ['add', '-A']).then(function () {
         return runCommand('git', ['commit', '-am', '"Add new report"']).then(function () {
-          return runCommand('git', ['push', repoURL]).then(function () {
+          return runCommand('git', ['push', repoURL], true).then(function () {
             console.log('Pushing to ' + repoURL)
             return ['https://ember-cli-visual-acceptance.github.io/' + newReportPath]
           })
         })
       })
-    }).catch(function (e){
-      console.log(e)
     })
   }
 
-  var imgurResponse = uploadToCompanionRepo(reportPath, newReportPath)
-  var githubApiPostOptions = {
-    'headers': {
-      'user-agent': 'visual-acceptance',
-      'Authorization': 'token ' + process.env.VISUAL_ACCEPTANCE_TOKEN
-    },
-    'json': {
-      'body': '![PR ember-cli-visual-acceptance Report](' + imgurResponse[0] + ')'
+  return uploadToCompanionRepo(reportPath, newReportPath).then(function (response) {
+    var githubApiPostOptions = {
+      'headers': {
+        'user-agent': 'visual-acceptance',
+        'Authorization': 'token ' + process.env.VISUAL_ACCEPTANCE_TOKEN
+      },
+      'json': {
+        'body': '[PR ember-cli-visual-acceptance Report](' + response[0] + ')'
+      }
     }
-  }
 
-  var githubApiGetOptions = {
-    'headers': {
-      'user-agent': 'visual-acceptance',
-      'Authorization': 'token ' + process.env.VISUAL_ACCEPTANCE_TOKEN
+    var githubApiGetOptions = {
+      'headers': {
+        'user-agent': 'visual-acceptance',
+        'Authorization': 'token ' + process.env.VISUAL_ACCEPTANCE_TOKEN
+      }
     }
-  }
-  var url = 'https://api.github.com/repos/' + process.env.TRAVIS_REPO_SLUG + '/issues/' + process.env.TRAVIS_PULL_REQUEST + '/comments'
-  var response = request('GET', url, githubApiGetOptions)
-  var bodyJSON = JSON.parse(response.getBody().toString())
-  for (var i = 0; i < bodyJSON.length; i++) {
-    if (bodyJSON[i].body.indexOf('![PR ember-cli-visual-acceptance Report]') > -1) {
-      url = bodyJSON[i].url
-      break
+    var url = 'https://api.github.com/repos/' + process.env.TRAVIS_REPO_SLUG + '/issues/' + process.env.TRAVIS_PULL_REQUEST + '/comments'
+    var response = request('GET', url, githubApiGetOptions)
+    var bodyJSON = JSON.parse(response.getBody().toString())
+    for (var i = 0; i < bodyJSON.length; i++) {
+      if (bodyJSON[i].body.indexOf('[PR ember-cli-visual-acceptance Report]') > -1) {
+        url = bodyJSON[i].url
+        break
+      }
     }
-  }
-  response = request('POST', url, githubApiPostOptions)
-  return response
+    response = request('POST', url, githubApiPostOptions)
+    return response
+  })
 }
 function buildTeamcityBitbucketReport (params, options, prNumber) {
   return runCommand('phantomjs', ['vendor/html-to-image.js', 'visual-acceptance-report/report.html']).then(function (params) {
